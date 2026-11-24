@@ -1,0 +1,213 @@
+/*
+ * decision-board 하네스 기본 모양. 하네스 틀은 --d-* 변수만 쓴다(프로젝트 토큰과 섞이지 않게).
+ * 목업 안쪽은 페이지가 프로젝트 토큰(예: <link href="/theme/tokens.css">)이나 원본 값으로 그린다.
+ * 모드는 <html data-mode="light|dark">(common.js가 단다).
+ */
+:root {
+  --d-bg: #f6f7f9;
+  --d-surface: #ffffff;
+  --d-fg: #1f2328;
+  --d-muted: #636c76;
+  --d-border: #d0d7de;
+  --d-border-strong: #8c959f;
+  --d-accent: #0969da;
+  --d-accent-soft: color-mix(in srgb, #0969da 10%, transparent);
+  --d-warn: #9a6700;
+  --d-ok: #1a7f37;
+  --d-ok-soft: color-mix(in srgb, #1a7f37 16%, transparent);
+  --d-radius: 6px;
+  color-scheme: light;
+}
+:root[data-mode='dark'] {
+  --d-bg: #0d1117;
+  --d-surface: #161b22;
+  --d-fg: #e6edf3;
+  --d-muted: #9198a1;
+  --d-border: #30363d;
+  --d-border-strong: #656c76;
+  --d-accent: #4493f8;
+  --d-accent-soft: color-mix(in srgb, #4493f8 15%, transparent);
+  --d-warn: #d29922;
+  --d-ok: #3fb950;
+  --d-ok-soft: color-mix(in srgb, #3fb950 20%, transparent);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none; }
+body {
+  display: flex; flex-direction: column;
+  font-family: system-ui, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--d-fg);
+  background: var(--d-bg);
+}
+code, kbd, .mono { font-family: ui-monospace, Consolas, 'D2Coding', monospace; font-size: 0.92em; }
+
+/* 위쪽 이동 줄 */
+.discuss-nav {
+  flex: none; position: relative; z-index: 10;
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  padding: 8px 24px; background: var(--d-surface); border-bottom: 1px solid var(--d-border);
+}
+.discuss-nav a {
+  padding: 6px 10px; border-radius: var(--d-radius); color: var(--d-muted);
+  text-decoration: none; font-weight: 600;
+  /* 답한 비율(--p)만큼 왼쪽부터 채운다. 다 답하면 .done */
+  background: linear-gradient(to right, var(--d-ok-soft) var(--p, 0%), transparent var(--p, 0%));
+}
+.discuss-nav a:hover { color: var(--d-fg); }
+.discuss-nav a.done { color: var(--d-ok); background: var(--d-ok-soft); }
+.discuss-nav a[aria-current='page'] { color: var(--d-fg); box-shadow: inset 0 -2px 0 var(--d-accent); }
+.discuss-nav a.done[aria-current='page'] { color: var(--d-ok); }
+.discuss-nav a .count { font-weight: 400; font-size: 12px; margin-left: 4px; }
+.discuss-nav .spacer { flex: 1; }
+.discuss-nav button {
+  font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--d-border-strong);
+  border-radius: var(--d-radius); background: var(--d-surface); color: var(--d-fg); cursor: pointer;
+}
+.discuss-nav .seg { display: inline-flex; border: 1px solid var(--d-border-strong); border-radius: var(--d-radius); overflow: hidden; }
+.discuss-nav .seg button { border: 0; border-radius: 0; }
+.discuss-nav .seg button[aria-pressed='true'] { background: var(--d-accent); color: #fff; }
+.discuss-nav .save-state { color: var(--d-muted); font-size: 12px; margin-left: 8px; min-width: 120px; }
+.discuss-nav .save-state.error { color: var(--d-warn); }
+
+/* 본문 */
+main.discuss { padding: 24px; max-width: 1480px; }
+main.discuss > h1 { font-size: 24px; margin: 0 0 4px; }
+main.discuss > .lead { color: var(--d-muted); margin: 0 0 12px; }
+.review-state {
+  display: inline-block; margin: 0 0 20px; padding: 2px 10px; font-size: 12px;
+  border: 1px solid var(--d-border-strong); border-radius: var(--d-radius); color: var(--d-muted);
+}
+.review-state.ok { color: var(--d-ok); border-color: var(--d-ok); }
+.review-state.stale { color: var(--d-warn); border-color: var(--d-warn); background: color-mix(in srgb, var(--d-warn) 8%, transparent); }
+
+/* 화면 틀: 상단바는 고정, 아래 영역만 안쪽에서 스크롤한다(오버스크롤 때 상단바가 같이 튕기지 않게) */
+.discuss-body { flex: 1; min-height: 0; position: relative; display: flex; }
+.discuss-scroll { flex: 1; min-width: 0; overflow: auto; overscroll-behavior: contain; }
+body.has-toc .discuss-scroll { padding-left: 56px; }
+
+/* 왼쪽 결정 목차: 평소엔 "-"만 보이고, 마우스를 올리면 항목명이 펼쳐진다. 본문과 따로 스크롤한다. 색 구분 없이 왼쪽 아이콘으로만 상태를 보인다: 답함 = 초록 ✓, 메모만 있음 = ✎ */
+.discuss-toc {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 56px; z-index: 5;
+  overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 36px 0 12px;
+  font-size: 13px; transition: width 0.15s ease-out;
+}
+.discuss-toc:hover, .discuss-toc:focus-within {
+  width: 272px; border-right: 1px solid var(--d-border); box-shadow: 4px 0 12px rgb(0 0 0 / 0.08);
+  background: color-mix(in srgb, var(--d-surface) 78%, transparent); backdrop-filter: blur(6px);
+}
+.discuss-toc a { display: flex; align-items: center; gap: 6px; padding: 6px 12px 6px 10px; color: var(--d-muted); text-decoration: none; white-space: nowrap; }
+.discuss-toc a:hover { color: var(--d-fg); background: var(--d-accent-soft); }
+.discuss-toc .state { flex: none; width: 14px; text-align: center; font-size: 12px; font-weight: 700; line-height: 1; }
+.discuss-toc a.answered .state { color: var(--d-ok); }
+.discuss-toc a.answered .state::before { content: '✓'; }
+.discuss-toc a.noted:not(.answered) .state::before { content: '✎'; }
+.discuss-toc .dash { flex: none; width: 14px; height: 2px; border-radius: 2px; background: currentColor; }
+.discuss-toc a.here { color: var(--d-fg); }
+.discuss-toc a.here .dash { height: 3px; }
+.discuss-toc .label { margin-left: 6px; opacity: 0; overflow: hidden; text-overflow: ellipsis; transition: opacity 0.1s; }
+.discuss-toc:hover .label, .discuss-toc:focus-within .label { opacity: 1; }
+
+
+/* 결정 하나 */
+.decision {
+  scroll-margin-top: 12px;
+  background: var(--d-surface); border: 1px solid var(--d-border); border-radius: var(--d-radius);
+  padding: 20px; margin-bottom: 24px;
+}
+.decision.answered { border-color: color-mix(in srgb, var(--d-ok) 50%, var(--d-border)); }
+.decision > h2 { font-size: 18px; margin: 0 0 4px; }
+.decision h3 { font-size: 15px; margin: 16px 0 8px; }
+.decision .ref { color: var(--d-muted); font-size: 12px; margin-bottom: 12px; }
+.decision .facts { margin: 0 0 16px; padding-left: 18px; }
+.decision .facts li { margin: 3px 0; }
+.decision .risk { color: var(--d-warn); }
+.decision .shots { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+.decision figure { margin: 0; }
+.decision figcaption { font-size: 12px; color: var(--d-muted); margin-top: 4px; }
+.decision .sub { margin-top: 16px; padding-top: 12px; border-top: 1px dashed var(--d-border); }
+.decision .memo { margin-top: 12px; }
+.decision .memo > label { display: block; font-size: 12px; color: var(--d-muted); margin-bottom: 4px; }
+.memo:not(.open) .memo-body { display: none; }
+.memo.open .memo-add { display: none; }
+.decision .memo-add {
+  font: inherit; font-size: 12px; padding: 2px 8px; border: 1px solid var(--d-border-strong);
+  border-radius: var(--d-radius); background: var(--d-surface); color: var(--d-fg); cursor: pointer;
+}
+.decision textarea {
+  display: block; width: 100%; min-height: 56px; font: inherit; padding: 8px;
+  border: 1px solid var(--d-border-strong); border-radius: var(--d-radius); background: var(--d-bg); color: var(--d-fg);
+  resize: vertical;
+}
+
+/* 선택지 */
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; }
+.options.col1 { grid-template-columns: 1fr; }
+.option {
+  display: flex; flex-direction: column; gap: 8px; min-width: 0;
+  border: 1px solid var(--d-border); border-radius: var(--d-radius); padding: 12px; cursor: pointer;
+  background: var(--d-bg);
+}
+.option:hover { border-color: var(--d-border-strong); }
+.option { position: relative; }
+.option:has(input:checked) {
+  border-color: var(--d-accent); box-shadow: 0 0 0 1px var(--d-accent);
+  background: color-mix(in srgb, var(--d-accent) 8%, var(--d-bg));
+}
+/* 색 말고 모양으로도 고른 것을 알리는 체크 배지 */
+.option:has(input:checked)::after {
+  content: '✓'; position: absolute; top: 10px; right: 10px; width: 20px; height: 20px;
+  border-radius: 50%; background: var(--d-accent); color: #fff; font-size: 12px; font-weight: 700; line-height: 20px; text-align: center;
+}
+.option > .head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-weight: 600; padding-right: 28px; }
+.option > .desc { color: var(--d-muted); font-size: 13px; }
+.option .mock { border-radius: var(--d-radius); overflow: auto; }
+
+.rec, .tag {
+  display: inline-block; font-size: 11px; font-weight: 600; line-height: 16px;
+  border-radius: 4px; padding: 0 5px; vertical-align: 1px;
+}
+.rec { color: var(--d-accent); border: 1px solid var(--d-accent); }
+.tag { color: var(--d-fg); border: 1px dashed var(--d-border-strong); }
+.superseded { opacity: 0.55; }
+.notice {
+  border: 1px solid var(--d-warn); border-radius: var(--d-radius); padding: 8px 12px; margin-bottom: 12px;
+  color: var(--d-fg); background: color-mix(in srgb, var(--d-warn) 8%, transparent);
+}
+
+/* 체크 목록(여러 항목을 한꺼번에 고를 때) */
+.checklist { display: flex; flex-direction: column; gap: 6px; }
+.checklist label {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: start;
+  padding: 8px 10px; border: 1px solid var(--d-border); border-radius: var(--d-radius); background: var(--d-bg); cursor: pointer;
+}
+.checklist label:has(input:checked) { border-color: var(--d-accent); }
+.checklist input { margin-top: 3px; }
+.bulk { display: flex; gap: 6px; margin: 8px 0; }
+.bulk button {
+  font: inherit; font-size: 12px; padding: 2px 8px; border: 1px solid var(--d-border-strong);
+  border-radius: var(--d-radius); background: var(--d-surface); color: var(--d-fg); cursor: pointer;
+}
+
+/* 표(사실 정리용) */
+table.plain { border-collapse: collapse; margin: 6px 0; }
+table.plain th, table.plain td { padding: 4px 12px 4px 0; text-align: left; vertical-align: top; border-bottom: 1px solid var(--d-border); }
+table.plain th { color: var(--d-muted); font-weight: 600; }
+
+/* 스크린샷 자르기(common.js가 채운다) */
+.crop-box { position: relative; overflow: hidden; border: 1px solid var(--d-border); border-radius: var(--d-radius); cursor: zoom-in; }
+.crop-box img { position: absolute; max-width: none; }
+.crop-box.broken { display: grid; place-items: center; color: var(--d-warn); font-size: 12px; cursor: default; }
+
+/* 페이지가 바뀌었을 때 뜨는 알림(자동 새로고침 대신) */
+.page-updated {
+  position: fixed; top: 56px; right: 16px; z-index: 20; padding: 8px 12px; font-size: 13px;
+  background: var(--d-surface); border: 1px solid var(--d-warn); border-radius: var(--d-radius); box-shadow: 0 4px 12px rgb(0 0 0 / 0.12);
+}
+.page-updated button {
+  font: inherit; font-size: 12px; margin-left: 8px; padding: 2px 8px; border: 1px solid var(--d-border-strong);
+  border-radius: var(--d-radius); background: var(--d-bg); color: var(--d-fg); cursor: pointer;
+}

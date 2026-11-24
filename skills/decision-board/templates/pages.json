@@ -1,0 +1,10 @@
+{
+  "title": "논의 제목",
+  "pages": [
+    { "href": "/p1.html", "title": "1. 첫 주제" }
+  ],
+  "toggles": [
+    { "attr": "mode", "values": ["light", "dark"], "labels": ["라이트", "다크"] }
+  ],
+  "rootAttrs": {}
+}

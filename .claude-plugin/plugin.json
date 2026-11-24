@@ -1,0 +1,16 @@
+{
+  "name": "visual-decisions",
+  "version": "1.0.0",
+  "description": "Ask many decisions at once on local HTML pages with side-by-side mockups; answers are saved by a tiny Node server.",
+  "author": {
+    "name": "kimeloo"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "decision",
+    "mockup",
+    "html",
+    "review"
+  ],
+  "repository": "https://github.com/kimeloo/visual-decisions-plugin"
+}

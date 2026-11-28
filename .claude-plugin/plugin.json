@@ -1,6 +1,6 @@
 {
   "name": "visual-decisions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ask many decisions at once on local HTML pages with side-by-side mockups; answers are saved by a tiny Node server.",
   "author": {
     "name": "kimeloo"

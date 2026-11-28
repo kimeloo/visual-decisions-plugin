@@ -37,10 +37,10 @@ for (const page of config.pages ?? []) {
   const checkedRadios = inputs.filter((tag) => /type="radio"/.test(tag) && /\bchecked\b/.test(tag));
   if (checkedRadios.length) fail(`${checkedRadios.length} default-checked radio(s)`);
   const shortOpts = (html.match(/<d-opt\b/g) ?? []).length;
-  const radios = inputs.filter((tag) => /type="radio"/.test(tag)).length;
-  if (decisions.length && shortOpts + radios < 2) fail('fewer than 2 options');
+  const choices = inputs.filter((tag) => /type="(radio|checkbox)"/.test(tag)).length;
+  if (decisions.length && shortOpts + choices < 2) fail('fewer than 2 options');
 
-  summary.push(`${file} ${decisions.length} decisions (${shortOpts + radios} options)`);
+  summary.push(`${file} ${decisions.length} decisions (${shortOpts + choices} options)`);
 }
 
 // If the server is up, only check responses (answers.json is not touched)
